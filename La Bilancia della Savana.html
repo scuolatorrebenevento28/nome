@@ -1,0 +1,900 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>La Bilancia della Savana – Impara &lt;, = e &gt;</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@600;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+<style>
+  :root {
+    --sky-top: #8fd3f4;
+    --sky-mid: #fde9b8;
+    --ground: #b7e4a8;
+    --card: rgba(255,255,255,0.88);
+    --card-solid: #ffffff;
+    --border: #f2b84b;
+    --text: #3b2a12;
+    --text-soft: #7a5a22;
+    --accent: #e8900c;
+    --accent-dark: #a85d06;
+    --left: #2f7fd1;
+    --right: #e0701c;
+    --ok: #1f9d63;
+    --warn: #c76b00;
+    --chip: #fff4dc;
+    --shadow: rgba(80,50,0,0.18);
+    --font-display: "Fredoka", "Trebuchet MS", "Segoe UI", system-ui, sans-serif;
+    --font-body: "Nunito", "Segoe UI", system-ui, -apple-system, sans-serif;
+    color-scheme: light;
+    box-sizing: border-box;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --sky-top: #1b2a4a;
+      --sky-mid: #3a3256;
+      --ground: #23402e;
+      --card: rgba(30,28,44,0.9);
+      --card-solid: #24213a;
+      --border: #c98a2a;
+      --text: #fbeed4;
+      --text-soft: #e2c58f;
+      --accent: #f2a53a;
+      --accent-dark: #ffcf7a;
+      --left: #6aaef5;
+      --right: #ff9a52;
+      --ok: #4fd69a;
+      --warn: #ffb04a;
+      --chip: #3a3350;
+      --shadow: rgba(0,0,0,0.45);
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --sky-top: #1b2a4a; --sky-mid: #3a3256; --ground: #23402e;
+    --card: rgba(30,28,44,0.9); --card-solid: #24213a; --border: #c98a2a;
+    --text: #fbeed4; --text-soft: #e2c58f; --accent: #f2a53a; --accent-dark: #ffcf7a;
+    --left: #6aaef5; --right: #ff9a52; --ok: #4fd69a; --warn: #ffb04a;
+    --chip: #3a3350; --shadow: rgba(0,0,0,0.45); color-scheme: dark;
+  }
+
+  *, *::before, *::after { box-sizing: inherit; }
+  html { height: 100%; scroll-padding-top: env(safe-area-inset-top, 0px); }
+  body {
+    margin: 0;
+    min-height: 100%;
+    font-family: var(--font-body);
+    color: var(--text);
+    background: linear-gradient(to bottom, var(--sky-top) 0%, var(--sky-mid) 55%, var(--ground) 100%);
+    background-color: var(--sky-mid);
+    background-attachment: fixed;
+    display: flex;
+    flex-direction: column;
+    -webkit-user-select: none;
+    user-select: none;
+    overflow-x: hidden;
+  }
+  button { font: inherit; color: inherit; cursor: pointer; }
+  button:focus-visible { outline: 4px solid var(--left); outline-offset: 3px; }
+  .wrap { width: 100%; max-width: 1000px; margin: 0 auto; padding: 0 14px; }
+
+  /* ---------- Barra superiore ---------- */
+  header.top {
+    display: flex; flex-wrap: wrap; gap: 10px;
+    align-items: center; justify-content: space-between;
+    padding-top: 14px;
+  }
+  .panel {
+    background: var(--card);
+    border: 2px solid var(--border);
+    border-radius: 18px;
+    box-shadow: 0 4px 0 var(--shadow);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+  }
+  .brand { display: flex; align-items: center; gap: 10px; padding: 8px 14px; }
+  .brand-icon { font-size: 1.9rem; line-height: 1; }
+  .brand h1 { font-family: var(--font-display); font-weight: 700; font-size: clamp(1.1rem, 3vw, 1.5rem); margin: 0; line-height: 1.05; }
+  .brand p { margin: 2px 0 0; font-size: .8rem; color: var(--text-soft); }
+
+  .levels { display: flex; gap: 4px; padding: 5px; }
+  .levels button {
+    border: 0; background: transparent;
+    padding: 7px 12px; border-radius: 12px;
+    font-weight: 800; font-size: .88rem;
+    transition: background .15s;
+  }
+  .levels button:hover { background: var(--chip); }
+  .levels button[aria-pressed="true"] { background: var(--accent); color: #fff; box-shadow: 0 2px 0 var(--accent-dark); }
+
+  .stats { display: flex; align-items: center; gap: 12px; padding: 8px 14px; font-family: var(--font-display); font-weight: 600; font-size: 1.15rem; }
+  .stat { display: flex; align-items: center; gap: 4px; }
+  .stat small { font-family: var(--font-body); font-size: .7rem; color: var(--text-soft); margin-left: 2px; }
+  .stat.bump { animation: bump .45s ease; }
+  @keyframes bump { 40% { transform: scale(1.35); } }
+
+  /* ---------- Area di gioco ---------- */
+  main { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 10px; padding-top: 12px; padding-bottom: 10px; }
+  .instruction {
+    padding: 8px 20px; border-radius: 999px;
+    font-weight: 800; font-size: clamp(1rem, 2.6vw, 1.25rem);
+    text-align: center;
+  }
+
+  .scene {
+    width: 100%;
+    display: grid;
+    grid-template-columns: 1fr 2fr 1fr;
+    align-items: end;
+    gap: 6px;
+  }
+  .character { display: flex; flex-direction: column; align-items: center; min-width: 0; }
+  .character svg { width: 100%; max-width: 200px; height: auto; filter: drop-shadow(0 8px 6px var(--shadow)); }
+  .speech {
+    background: var(--card-solid);
+    border: 2px solid currentColor;
+    border-radius: 16px;
+    padding: 6px 10px;
+    font-weight: 800;
+    font-size: clamp(.72rem, 1.9vw, .95rem);
+    text-align: center;
+    margin-bottom: 6px;
+    min-height: 2.2em;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .character.left .speech { color: var(--left); border-bottom-left-radius: 4px; }
+  .character.right .speech { color: var(--right); border-bottom-right-radius: 4px; }
+  .name-tag {
+    font-family: var(--font-display); font-weight: 600;
+    font-size: clamp(.8rem, 2vw, 1.05rem);
+    background: var(--card); border-radius: 999px;
+    padding: 2px 12px; margin-top: 4px;
+    border: 1px solid var(--border);
+    white-space: nowrap;
+  }
+  .character .body { transform-origin: 50% 100%; }
+  .character.idle .body { animation: float-idle 3s ease-in-out infinite; }
+  .character.right.idle .body { animation-delay: -1.5s; }
+  .character.happy .body { animation: bounce-happy .6s ease 3; }
+  .character.sad .body { animation: shake-sad .5s ease; }
+  @keyframes float-idle { 50% { transform: translateY(-7px); } }
+  @keyframes bounce-happy { 50% { transform: translateY(-18px) scale(1.06); } }
+  @keyframes shake-sad { 20%, 60% { transform: translateX(-8px); } 40%, 80% { transform: translateX(8px); } }
+
+  .scale-wrap { display: flex; flex-direction: column; align-items: center; min-width: 0; }
+  .scale-wrap svg { width: 100%; height: auto; overflow: visible; }
+
+  /* Equazione sotto la bilancia */
+  .equation {
+    display: flex; align-items: center; justify-content: center; gap: clamp(6px, 2vw, 16px);
+    font-family: var(--font-display); font-weight: 700;
+    font-size: clamp(1.4rem, 5vw, 2.4rem);
+    padding: 6px 18px; margin-top: -4px;
+    min-width: 60%;
+  }
+  .eq-side { white-space: nowrap; }
+  .eq-side.l { color: var(--left); }
+  .eq-side.r { color: var(--right); }
+  .eq-side .sum { font-size: .55em; color: var(--text-soft); display: block; text-align: center; line-height: 1; margin-top: 2px; }
+  .eq-sym {
+    width: 1.6em; height: 1.6em; border-radius: 14px;
+    display: grid; place-items: center;
+    border: 3px dashed var(--border); color: var(--text-soft);
+    transition: background .25s, color .25s, border-color .25s, transform .25s;
+  }
+  .eq-sym.filled { border-style: solid; background: var(--ok); border-color: var(--ok); color: #fff; transform: scale(1.1); }
+
+  /* ---------- Pulsanti di scelta ---------- */
+  .choices { width: 100%; max-width: 560px; padding: 14px; border-width: 3px; border-radius: 26px; }
+  .choices p { margin: 0 0 10px; text-align: center; font-weight: 800; color: var(--text-soft); font-size: .95rem; }
+  .choice-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: clamp(8px, 3vw, 20px); }
+  .btn-choice {
+    border: 0; border-radius: 20px; color: #fff;
+    padding: 10px 4px 8px;
+    display: flex; flex-direction: column; align-items: center;
+    box-shadow: 0 7px 0 rgba(0,0,0,0.22);
+    transition: transform .15s cubic-bezier(.175,.885,.32,1.275), box-shadow .15s, opacity .2s;
+  }
+  .btn-choice .sym { font-family: var(--font-display); font-weight: 700; font-size: clamp(2.2rem, 7vw, 3.2rem); line-height: 1; }
+  .btn-choice .lbl { font-weight: 800; font-size: clamp(.72rem, 2vw, .9rem); margin-top: 2px; }
+  .btn-choice:hover:not(:disabled) { transform: translateY(-3px); box-shadow: 0 10px 0 rgba(0,0,0,0.22); }
+  .btn-choice:active:not(:disabled) { transform: translateY(5px); box-shadow: 0 2px 0 rgba(0,0,0,0.22); }
+  .btn-choice:disabled { opacity: .45; cursor: default; }
+  .btn-lt { background: linear-gradient(#4f9be6, #2266b8); }
+  .btn-eq { background: linear-gradient(#3cc488, #178a55); }
+  .btn-gt { background: linear-gradient(#f5b03c, #cf7a06); }
+  .keys-hint { text-align: center; font-size: .75rem; color: var(--text-soft); margin: 10px 0 0; }
+
+  /* ---------- Footer ---------- */
+  footer { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding-bottom: 12px; font-size: .78rem; font-weight: 800; color: var(--text-soft); }
+  .pill-btn { border: 1px solid var(--border); background: var(--card); padding: 6px 12px; border-radius: 999px; font-weight: 800; }
+  .pill-btn:hover { background: var(--card-solid); }
+  .footer-note { text-align: center; }
+
+  /* ---------- Modale ---------- */
+  .modal-backdrop {
+    position: fixed; inset: 0; z-index: 50;
+    background: rgba(20,12,0,.5);
+    display: grid; place-items: center; padding: 16px;
+    opacity: 0; pointer-events: none; transition: opacity .25s;
+  }
+  .modal-backdrop.open { opacity: 1; pointer-events: auto; }
+  .modal {
+    background: var(--card-solid); border: 4px solid var(--border); border-radius: 28px;
+    max-width: 380px; width: 100%; padding: 26px 22px; text-align: center;
+    box-shadow: 0 20px 40px var(--shadow);
+    transform: scale(.9); transition: transform .25s cubic-bezier(.34,1.56,.64,1);
+  }
+  .modal-backdrop.open .modal { transform: scale(1); }
+  .modal-icon { font-size: 3.4rem; line-height: 1; }
+  .modal h2 { font-family: var(--font-display); font-weight: 700; font-size: 1.6rem; margin: 8px 0 6px; }
+  .modal h2.ok { color: var(--ok); }
+  .modal h2.warn { color: var(--warn); }
+  .modal p { margin: 0 0 8px; font-size: 1.05rem; line-height: 1.45; }
+  .modal .tip { font-size: .92rem; color: var(--text-soft); background: var(--chip); border-radius: 14px; padding: 8px 12px; margin-top: 10px; }
+  .modal-actions { display: grid; gap: 8px; margin-top: 18px; }
+  .btn-main {
+    border: 0; border-radius: 16px; padding: 12px;
+    background: var(--accent); color: #fff;
+    font-family: var(--font-display); font-weight: 600; font-size: 1.15rem;
+    box-shadow: 0 4px 0 var(--accent-dark);
+  }
+  .btn-main:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--accent-dark); }
+  .btn-second { border: 2px solid var(--ok); background: transparent; color: var(--ok); border-radius: 16px; padding: 10px; font-weight: 800; }
+  [hidden] { display: none !important; }
+
+  .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+  @media (max-width: 640px) {
+    .levels { order: 3; width: 100%; justify-content: center; }
+    .levels button { flex: 1; }
+    .brand p { display: none; }
+    .scene { grid-template-columns: 1fr 2.2fr 1fr; }
+    .footer-note { display: none; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation: none !important; transition: none !important; }
+  }
+</style>
+</head>
+<body>
+
+<header class="top wrap">
+  <div class="brand panel">
+    <span class="brand-icon" aria-hidden="true">⚖️</span>
+    <div>
+      <h1>Sfida nella Savana</h1>
+      <p>Impara &lt;, = e &gt; con la bilancia</p>
+    </div>
+  </div>
+
+  <nav class="levels panel" aria-label="Livello di difficoltà">
+    <button type="button" data-level="1" aria-pressed="true">Livello 1</button>
+    <button type="button" data-level="2" aria-pressed="false">Livello 2</button>
+    <button type="button" data-level="3" aria-pressed="false">Livello 3</button>
+  </nav>
+
+  <div class="stats panel" aria-label="Punteggio">
+    <span class="stat" id="stat-score" title="Punti"><span aria-hidden="true">⭐</span><span id="score-val">0</span></span>
+    <span class="stat" id="stat-streak" title="Risposte giuste di fila"><span aria-hidden="true">🔥</span><span id="streak-val">0</span></span>
+    <span class="stat" title="Record"><span aria-hidden="true">🏆</span><span id="best-val">0</span></span>
+  </div>
+</header>
+
+<main class="wrap">
+  <div class="instruction panel" id="instruction-text">Conta le casse: quale lato pesa di più?</div>
+
+  <div class="scene">
+    <!-- ELEFANTE -->
+    <div class="character left idle" id="elephant">
+      <div class="speech" id="left-speech" aria-live="polite">Ecco il mio carico! 🐘</div>
+      <div class="body">
+        <svg viewBox="0 0 200 200" aria-hidden="true">
+          <circle cx="60" cy="90" r="35" fill="#94A3B8"/>
+          <ellipse cx="100" cy="130" rx="65" ry="50" fill="#CBD5E1"/>
+          <rect x="55" y="140" width="22" height="45" rx="10" fill="#94A3B8"/>
+          <rect x="85" y="145" width="22" height="40" rx="10" fill="#64748B"/>
+          <rect x="115" y="145" width="22" height="40" rx="10" fill="#64748B"/>
+          <rect x="140" y="140" width="22" height="45" rx="10" fill="#94A3B8"/>
+          <circle cx="125" cy="85" r="42" fill="#CBD5E1"/>
+          <ellipse cx="85" cy="85" rx="30" ry="38" fill="#E2E8F0" stroke="#94A3B8" stroke-width="3"/>
+          <ellipse cx="85" cy="85" rx="18" ry="24" fill="#F472B6" opacity="0.4"/>
+          <circle cx="138" cy="75" r="6" fill="#0F172A"/>
+          <circle cx="140" cy="73" r="2" fill="#FFFFFF"/>
+          <circle cx="130" cy="95" r="7" fill="#F472B6" opacity="0.5"/>
+          <path d="M 155 90 Q 185 95 180 120 Q 175 135 160 130" fill="none" stroke="#CBD5E1" stroke-width="16" stroke-linecap="round"/>
+          <path d="M 155 90 Q 185 95 180 120 Q 175 135 160 130" fill="none" stroke="#94A3B8" stroke-width="3" stroke-linecap="round"/>
+          <polygon points="110,48 135,10 145,46" fill="#F59E0B"/>
+          <circle cx="135" cy="10" r="5" fill="#EF4444"/>
+        </svg>
+      </div>
+      <span class="name-tag">Ella l’Elefante</span>
+    </div>
+
+    <!-- BILANCIA -->
+    <div class="scale-wrap">
+      <svg viewBox="0 0 400 310" role="img" aria-labelledby="scale-desc">
+        <title id="scale-desc">Bilancia a due piatti</title>
+        <defs>
+          <linearGradient id="baseGrad" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0" stop-color="#D97706"/><stop offset="1" stop-color="#78350F"/>
+          </linearGradient>
+          <linearGradient id="beamGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#F59E0B"/><stop offset="1" stop-color="#B45309"/>
+          </linearGradient>
+        </defs>
+
+        <!-- Base fissa -->
+        <polygon points="172,292 228,292 214,140 186,140" fill="url(#baseGrad)"/>
+        <rect x="150" y="288" width="100" height="16" rx="8" fill="#78350F"/>
+        <!-- Indicatore centrale (si muove con l’asta) -->
+        <path d="M 192 196 L 208 196 L 200 214 Z" fill="#78350F" opacity=".35"/>
+
+        <!-- Piatti: posizionati via JS nel punto di aggancio -->
+        <g id="left-pan">
+          <line x1="0" y1="0" x2="-36" y2="88" stroke="#92400E" stroke-width="3"/>
+          <line x1="0" y1="0" x2="36" y2="88" stroke="#92400E" stroke-width="3"/>
+          <g id="left-load"></g>
+          <path d="M -44 88 L 44 88 Q 0 116 -44 88 Z" fill="#FBBF24" stroke="#78350F" stroke-width="3"/>
+        </g>
+        <g id="right-pan">
+          <line x1="0" y1="0" x2="-36" y2="88" stroke="#92400E" stroke-width="3"/>
+          <line x1="0" y1="0" x2="36" y2="88" stroke="#92400E" stroke-width="3"/>
+          <g id="right-load"></g>
+          <path d="M -44 88 L 44 88 Q 0 116 -44 88 Z" fill="#FBBF24" stroke="#78350F" stroke-width="3"/>
+        </g>
+
+        <!-- Asta rotante -->
+        <g id="beam">
+          <rect x="30" y="133" width="340" height="14" rx="7" fill="url(#beamGrad)" stroke="#78350F" stroke-width="2"/>
+          <line x1="44" y1="140" x2="356" y2="140" stroke="#FCD34D" stroke-width="2" stroke-dasharray="6,4"/>
+          <circle cx="40" cy="140" r="5" fill="#78350F"/>
+          <circle cx="360" cy="140" r="5" fill="#78350F"/>
+          <!-- Ago indicatore -->
+          <rect x="197" y="140" width="6" height="58" rx="3" fill="#78350F"/>
+        </g>
+        <circle cx="200" cy="140" r="14" fill="#FBBF24" stroke="#78350F" stroke-width="3"/>
+        <circle cx="200" cy="140" r="5" fill="#78350F"/>
+      </svg>
+
+      <div class="equation panel" aria-live="polite">
+        <span class="eq-side l" id="eq-left">?</span>
+        <span class="eq-sym" id="eq-sym" aria-label="simbolo da scegliere">?</span>
+        <span class="eq-side r" id="eq-right">?</span>
+      </div>
+    </div>
+
+    <!-- RINOCERONTE -->
+    <div class="character right idle" id="rhino">
+      <div class="speech" id="right-speech" aria-live="polite">Guarda il mio! 🦏</div>
+      <div class="body">
+        <svg viewBox="0 0 200 200" aria-hidden="true">
+          <polygon points="135,55 150,30 155,60" fill="#9CA3AF"/>
+          <ellipse cx="100" cy="130" rx="65" ry="48" fill="#D1D5DB"/>
+          <rect x="45" y="140" width="22" height="45" rx="10" fill="#9CA3AF"/>
+          <rect x="75" y="145" width="22" height="40" rx="10" fill="#6B7280"/>
+          <rect x="105" y="145" width="22" height="40" rx="10" fill="#6B7280"/>
+          <rect x="130" y="140" width="22" height="45" rx="10" fill="#9CA3AF"/>
+          <path d="M 60 110 C 50 60 110 50 130 80 C 140 100 120 130 80 125 Z" fill="#D1D5DB"/>
+          <path d="M 55 95 Q 35 70 45 60 Q 65 75 68 90 Z" fill="#FEF3C7" stroke="#F59E0B" stroke-width="2"/>
+          <path d="M 70 85 Q 60 70 66 65 Q 78 75 76 82 Z" fill="#FEF3C7" stroke="#F59E0B" stroke-width="2"/>
+          <polygon points="120,60 140,30 142,65" fill="#E5E7EB" stroke="#9CA3AF" stroke-width="2"/>
+          <circle cx="100" cy="75" r="6" fill="#0F172A"/>
+          <circle cx="98" cy="73" r="2" fill="#FFFFFF"/>
+          <circle cx="105" cy="95" r="7" fill="#F472B6" opacity="0.4"/>
+        </svg>
+      </div>
+      <span class="name-tag">Rino il Rinoceronte</span>
+    </div>
+  </div>
+
+  <section class="choices panel" aria-label="Scegli il simbolo">
+    <p>Sinistra … Destra: quale simbolo va in mezzo?</p>
+    <div class="choice-grid">
+      <button type="button" class="btn-choice btn-lt" data-sym="<" aria-label="Minore">
+        <span class="sym" aria-hidden="true">&lt;</span><span class="lbl">minore</span>
+      </button>
+      <button type="button" class="btn-choice btn-eq" data-sym="=" aria-label="Uguale">
+        <span class="sym" aria-hidden="true">=</span><span class="lbl">uguale</span>
+      </button>
+      <button type="button" class="btn-choice btn-gt" data-sym=">" aria-label="Maggiore">
+        <span class="sym" aria-hidden="true">&gt;</span><span class="lbl">maggiore</span>
+      </button>
+    </div>
+    <p class="keys-hint">Puoi usare anche la tastiera: &lt; = &gt;</p>
+  </section>
+</main>
+
+<footer class="wrap">
+  <button type="button" class="pill-btn" id="sound-btn" aria-pressed="true">🔊 Audio sì</button>
+  <span class="footer-note">Gioco di matematica per la scuola primaria</span>
+  <button type="button" class="pill-btn" id="reset-btn">🔄 Ricomincia</button>
+</footer>
+
+<div class="modal-backdrop" id="modal" aria-hidden="true">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title" aria-describedby="modal-msg">
+    <div class="modal-icon" id="modal-icon" aria-hidden="true">🌟</div>
+    <h2 id="modal-title">Bravissimo!</h2>
+    <p id="modal-msg"></p>
+    <p class="tip" id="modal-tip" hidden></p>
+    <div class="modal-actions">
+      <button type="button" class="btn-main" id="modal-primary">Prossima sfida ➡️</button>
+      <button type="button" class="btn-second" id="modal-levelup" hidden></button>
+    </div>
+  </div>
+</div>
+
+<div class="sr-only" aria-live="assertive" id="sr-announce"></div>
+
+<script>
+(() => {
+  "use strict";
+
+  // ---------- Configurazione ----------
+  const LEVELS = {
+    1: {
+      instruction: "Conta le casse: quale lato pesa di più?",
+      hint: "Conta le casse su ogni piatto, una alla volta, con il dito."
+    },
+    2: {
+      instruction: "Leggi i numeri sulle casse e confrontali!",
+      hint: "Quale numero viene dopo, contando? Quello è il più grande."
+    },
+    3: {
+      instruction: "Somma le casse di ogni lato, poi confronta!",
+      hint: "Prima fai la somma a sinistra, poi quella a destra, e infine confronta i due risultati."
+    }
+  };
+  const CROC_TIP = "🐊 Trucco: il simbolo è la bocca di un coccodrillo affamato, che si apre sempre verso il numero più grande!";
+  const STREAK_FOR_LEVEL_UP = 5;
+  const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  // ---------- Stato ----------
+  const state = {
+    level: 1, score: 0, streak: 0, best: 0, sound: true,
+    left: [], right: [], lt: 0, rt: 0, correct: "=",
+    attempts: 0, locked: false, lastKey: "", modalAction: null
+  };
+
+  // ---------- Archiviazione sicura ----------
+  const store = {
+    get(k, d) { try { const v = localStorage.getItem("savana:" + k); return v === null ? d : JSON.parse(v); } catch { return d; } },
+    set(k, v) { try { localStorage.setItem("savana:" + k, JSON.stringify(v)); } catch { /* storage non disponibile */ } }
+  };
+
+  const $ = (id) => document.getElementById(id);
+  const randInt = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
+
+  // ---------- Audio (Web Audio API) ----------
+  let audioCtx = null;
+  function tone(freq, start, dur, type = "sine", vol = 0.2) {
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = type;
+    osc.frequency.setValueAtTime(freq, start);
+    gain.gain.setValueAtTime(0.0001, start);
+    gain.gain.exponentialRampToValueAtTime(vol, start + 0.02);
+    gain.gain.exponentialRampToValueAtTime(0.0001, start + dur);
+    osc.connect(gain).connect(audioCtx.destination);
+    osc.start(start);
+    osc.stop(start + dur + 0.02);
+    return osc;
+  }
+  function playSound(type) {
+    if (!state.sound) return;
+    try {
+      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      if (audioCtx.state === "suspended") audioCtx.resume();
+      const t = audioCtx.currentTime;
+      if (type === "correct") {
+        [523.25, 659.25, 783.99, 1046.5].forEach((f, i) => tone(f, t + i * 0.09, 0.25, "triangle", 0.18));
+      } else if (type === "wrong") {
+        tone(330, t, 0.18, "sine", 0.2);
+        tone(247, t + 0.16, 0.28, "sine", 0.2);
+      } else if (type === "scale") {
+        const o = tone(260, t, 0.35, "sine", 0.1);
+        o.frequency.exponentialRampToValueAtTime(140, t + 0.35);
+      }
+    } catch { /* audio non supportato */ }
+  }
+
+  // ---------- Generazione dei round ----------
+  // Divide un totale in k casse con valori da 1 a 9
+  function splitSum(total, k) {
+    const out = [];
+    let rest = total;
+    for (let i = 0; i < k; i++) {
+      const left = k - i - 1;
+      const lo = Math.max(1, rest - 9 * left);
+      const hi = Math.min(9, rest - left);
+      const v = i === k - 1 ? rest : randInt(lo, hi);
+      out.push(v);
+      rest -= v;
+    }
+    return out;
+  }
+  function piecesFor(total) {
+    const options = [1, 2, 3].filter(k => total >= k && total <= 9 * k);
+    return options[randInt(0, options.length - 1)];
+  }
+
+  function makeRound(level) {
+    const equal = Math.random() < 0.22; // l’uguaglianza deve capitare abbastanza spesso
+    if (level === 1) {
+      const a = randInt(1, 5);
+      let b = equal ? a : randInt(1, 5);
+      if (!equal && b === a) b = a === 5 ? 4 : a + 1;
+      return [Array(a).fill(1), Array(b).fill(1)];
+    }
+    if (level === 2) {
+      const a = randInt(1, 10);
+      let b = equal ? a : randInt(1, 10);
+      if (!equal && b === a) b = a === 10 ? 9 : a + 1;
+      return [[a], [b]];
+    }
+    // Livello 3: somme di 1–3 casse
+    if (equal) {
+      const total = randInt(4, 18);
+      const l = splitSum(total, piecesFor(total));
+      let r = splitSum(total, piecesFor(total));
+      for (let i = 0; i < 6 && r.join() === l.join(); i++) r = splitSum(total, piecesFor(total));
+      return [l, r];
+    }
+    let l, r;
+    do {
+      l = Array.from({ length: randInt(1, 3) }, () => randInt(1, 9));
+      r = Array.from({ length: randInt(1, 3) }, () => randInt(1, 9));
+    } while (sum(l) === sum(r));
+    return [l, r];
+  }
+  const sum = (arr) => arr.reduce((a, b) => a + b, 0);
+
+  function newRound() {
+    let pair, key, tries = 0;
+    do {
+      pair = makeRound(state.level);
+      key = pair[0].join("+") + "|" + pair[1].join("+");
+    } while (key === state.lastKey && ++tries < 10);
+    state.lastKey = key;
+    [state.left, state.right] = pair;
+    state.lt = sum(state.left);
+    state.rt = sum(state.right);
+    state.correct = state.lt < state.rt ? "<" : state.lt > state.rt ? ">" : "=";
+    state.attempts = 0;
+    state.locked = false;
+
+    renderLoad($("left-load"), state.left, "left");
+    renderLoad($("right-load"), state.right, "right");
+    setTilt(0);
+    renderEquation(false);
+    $("instruction-text").textContent = LEVELS[state.level].instruction;
+    setMood("idle");
+    $("left-speech").textContent = "Ecco il mio carico! 🐘";
+    $("right-speech").textContent = "Guarda il mio! 🦏";
+    setButtonsEnabled(true);
+  }
+
+  // ---------- Disegno delle casse (SVG puro) ----------
+  const SVG_NS = "http://www.w3.org/2000/svg";
+  const CRATE_COLORS = ["#C2700A", "#E0701C", "#B7791F", "#9A5410"];
+
+  function svgEl(tag, attrs) {
+    const el = document.createElementNS(SVG_NS, tag);
+    for (const k in attrs) el.setAttribute(k, attrs[k]);
+    return el;
+  }
+
+  function renderLoad(group, values, side) {
+    group.replaceChildren();
+    const level = state.level;
+    // Dimensioni casse per livello
+    const size = level === 1 ? { w: 24, h: 22 } : level === 2 ? { w: 46, h: 38 } : { w: 36, h: 30 };
+    const perRow = level === 1 ? 3 : 2;
+    const gap = 3;
+    const baseY = 88; // superficie del piatto
+    const offset = side === "left" ? 0 : 1;
+
+    values.forEach((val, i) => {
+      const row = Math.floor(i / perRow);
+      const inRow = Math.min(perRow, values.length - row * perRow);
+      const col = i % perRow;
+      const rowWidth = inRow * size.w + (inRow - 1) * gap;
+      const x = -rowWidth / 2 + col * (size.w + gap);
+      const y = baseY - (row + 1) * size.h - row * gap;
+      const color = CRATE_COLORS[(i + offset) % CRATE_COLORS.length];
+
+      const g = svgEl("g", {});
+      g.appendChild(svgEl("rect", { x, y, width: size.w, height: size.h, rx: 4, fill: color, stroke: "#5b2f04", "stroke-width": 2 }));
+      // assi di legno
+      g.appendChild(svgEl("line", { x1: x + 3, y1: y + size.h * 0.33, x2: x + size.w - 3, y2: y + size.h * 0.33, stroke: "#5b2f04", "stroke-opacity": .35, "stroke-width": 1.5 }));
+      g.appendChild(svgEl("line", { x1: x + 3, y1: y + size.h * 0.66, x2: x + size.w - 3, y2: y + size.h * 0.66, stroke: "#5b2f04", "stroke-opacity": .35, "stroke-width": 1.5 }));
+      if (level > 1) {
+        const label = svgEl("text", {
+          x: x + size.w / 2, y: y + size.h / 2 + 1,
+          "text-anchor": "middle", "dominant-baseline": "central",
+          "font-family": "Fredoka, Trebuchet MS, sans-serif", "font-weight": 700,
+          "font-size": level === 2 ? 22 : 18,
+          fill: "#fff", stroke: "#5b2f04", "stroke-width": 3, "paint-order": "stroke"
+        });
+        label.textContent = val;
+        g.appendChild(label);
+      }
+      // piccola animazione di caduta
+      if (!reducedMotion) {
+        g.style.transform = "translateY(-30px)";
+        g.style.opacity = "0";
+        g.style.transition = `transform .35s cubic-bezier(.34,1.56,.64,1) ${i * 60}ms, opacity .2s ${i * 60}ms`;
+        requestAnimationFrame(() => requestAnimationFrame(() => { g.style.transform = ""; g.style.opacity = "1"; }));
+      }
+      group.appendChild(g);
+    });
+  }
+
+  // ---------- Fisica della bilancia (molla smorzata) ----------
+  const ARM = 160, CX = 200, CY = 140;
+  const tilt = { angle: 0, vel: 0, target: 0, running: false, last: 0 };
+
+  function drawTilt(a) {
+    const r = a * Math.PI / 180;
+    const c = Math.cos(r), s = Math.sin(r);
+    $("beam").setAttribute("transform", `rotate(${a.toFixed(3)} ${CX} ${CY})`);
+    // i piatti restano verticali: si spostano solo nel punto d’aggancio
+    $("left-pan").setAttribute("transform", `translate(${(CX - ARM * c).toFixed(2)} ${(CY - ARM * s).toFixed(2)})`);
+    $("right-pan").setAttribute("transform", `translate(${(CX + ARM * c).toFixed(2)} ${(CY + ARM * s).toFixed(2)})`);
+  }
+  function step(now) {
+    const dt = Math.min(0.032, (now - tilt.last) / 1000 || 0.016);
+    tilt.last = now;
+    const acc = -110 * (tilt.angle - tilt.target) - 7 * tilt.vel;
+    tilt.vel += acc * dt;
+    tilt.angle += tilt.vel * dt;
+    drawTilt(tilt.angle);
+    if (Math.abs(tilt.angle - tilt.target) < 0.02 && Math.abs(tilt.vel) < 0.02) {
+      tilt.angle = tilt.target; drawTilt(tilt.angle); tilt.running = false; return;
+    }
+    requestAnimationFrame(step);
+  }
+  function setTilt(target) {
+    const changed = target !== tilt.target;
+    tilt.target = target;
+    if (reducedMotion) { tilt.angle = target; drawTilt(target); return; }
+    if (changed) playSound("scale");
+    if (!tilt.running) { tilt.running = true; tilt.last = performance.now(); requestAnimationFrame(step); }
+  }
+  // Angolo proporzionale alla differenza: il lato più pesante scende.
+  // Nota: in SVG una rotazione positiva è oraria, quindi fa SALIRE il piatto sinistro.
+  function angleFor(lt, rt) {
+    const diff = rt - lt;
+    if (diff === 0) return 0;
+    const mag = Math.min(14, Math.max(5, Math.abs(diff) * 2.2));
+    return Math.sign(diff) * mag;
+  }
+
+  // ---------- Equazione ----------
+  function sideLabel(values, total, reveal) {
+    if (state.level === 1) return reveal ? String(total) : "?";
+    if (state.level === 2) return String(total);
+    const expr = values.join(" + ");
+    if (values.length === 1) return expr;
+    return reveal ? `${expr}<span class="sum">= ${total}</span>` : expr;
+  }
+  function renderEquation(reveal) {
+    $("eq-left").innerHTML = sideLabel(state.left, state.lt, reveal);
+    $("eq-right").innerHTML = sideLabel(state.right, state.rt, reveal);
+    const sym = $("eq-sym");
+    sym.textContent = reveal ? state.correct : "?";
+    sym.classList.toggle("filled", reveal);
+  }
+
+  // ---------- Personaggi ----------
+  function setMood(mood) {
+    ["elephant", "rhino"].forEach(id => {
+      const el = $(id);
+      el.classList.remove("idle", "happy", "sad");
+      void el.offsetWidth; // riavvia l’animazione
+      el.classList.add(mood);
+    });
+  }
+  function speakReveal() {
+    if (state.lt === state.rt) {
+      $("left-speech").textContent = "In equilibrio! 🤝";
+      $("right-speech").textContent = "Pesiamo uguale! 🤝";
+    } else if (state.lt > state.rt) {
+      $("left-speech").textContent = "Il mio piatto scende! ⬇️";
+      $("right-speech").textContent = "Il mio sale! ⬆️";
+    } else {
+      $("left-speech").textContent = "Il mio sale! ⬆️";
+      $("right-speech").textContent = "Il mio piatto scende! ⬇️";
+    }
+  }
+
+  // ---------- Risposta ----------
+  const SYMBOL_TEXT = { "<": "minore di", ">": "maggiore di", "=": "uguale a" };
+
+  function setButtonsEnabled(on) {
+    document.querySelectorAll(".btn-choice").forEach(b => { b.disabled = !on; });
+  }
+  function bump(id) {
+    const el = $(id);
+    el.classList.remove("bump"); void el.offsetWidth; el.classList.add("bump");
+  }
+  function updateStats() {
+    $("score-val").textContent = state.score;
+    $("streak-val").textContent = state.streak;
+    $("best-val").textContent = state.best;
+  }
+
+  function checkAnswer(sym) {
+    if (state.locked) return;
+    state.locked = true;
+    setButtonsEnabled(false);
+    state.attempts++;
+    const correct = sym === state.correct;
+
+    if (correct) {
+      const points = state.attempts === 1 ? 10 : 5;
+      state.score += points;
+      state.streak++;
+      if (state.score > state.best) { state.best = state.score; store.set("best", state.best); }
+      updateStats(); bump("stat-score"); bump("stat-streak");
+
+      setTilt(angleFor(state.lt, state.rt));
+      renderEquation(true);
+      speakReveal();
+      setTimeout(() => {
+        playSound("correct");
+        setMood("happy");
+        if (window.confetti && !reducedMotion) confetti({ particleCount: 80, spread: 70, origin: { y: 0.7 } });
+        const canLevelUp = state.level < 3 && state.streak > 0 && state.streak % STREAK_FOR_LEVEL_UP === 0;
+        showModal({
+          ok: true,
+          icon: "🌟",
+          title: state.attempts === 1 ? "Bravissimo!" : "Ce l’hai fatta!",
+          msg: `${state.lt} è ${SYMBOL_TEXT[state.correct]} ${state.rt}: ${state.lt} ${state.correct} ${state.rt}. Hai guadagnato ${points} punti.`,
+          tip: canLevelUp ? `🔥 ${state.streak} risposte giuste di fila! Vuoi provare qualcosa di più difficile?` : "",
+          primary: "Prossima sfida ➡️",
+          action: "next",
+          levelUp: canLevelUp ? state.level + 1 : null
+        });
+      }, reducedMotion ? 0 : 600);
+      return;
+    }
+
+    // Risposta sbagliata
+    state.streak = 0;
+    updateStats();
+    playSound("wrong");
+    setMood("sad");
+
+    if (state.attempts === 1) {
+      // Primo errore: un aiuto e un nuovo tentativo, senza svelare la soluzione
+      $("left-speech").textContent = "Hmm… 🤔";
+      $("right-speech").textContent = "Riprova! 💪";
+      setTimeout(() => showModal({
+        ok: false, icon: "💡", title: "Riflettiamo insieme!",
+        msg: LEVELS[state.level].hint,
+        tip: CROC_TIP,
+        primary: "Riprova 💪",
+        action: "retry"
+      }), 350);
+    } else {
+      // Secondo errore: la bilancia mostra la soluzione
+      setTilt(angleFor(state.lt, state.rt));
+      renderEquation(true);
+      speakReveal();
+      setTimeout(() => showModal({
+        ok: false, icon: "⚖️", title: "Guarda la bilancia!",
+        msg: `${state.lt} è ${SYMBOL_TEXT[state.correct]} ${state.rt}, quindi si scrive ${state.lt} ${state.correct} ${state.rt}.`,
+        tip: state.correct === "=" ? "Quando i due lati pesano uguale, la bilancia resta in equilibrio." : CROC_TIP,
+        primary: "Prossima sfida ➡️",
+        action: "next"
+      }), reducedMotion ? 0 : 900);
+    }
+  }
+
+  // ---------- Modale ----------
+  let lastFocus = null;
+  function showModal({ ok, icon, title, msg, tip, primary, action, levelUp = null }) {
+    $("modal-icon").textContent = icon;
+    const h = $("modal-title");
+    h.textContent = title;
+    h.className = ok ? "ok" : "warn";
+    $("modal-msg").textContent = msg;
+    const tipEl = $("modal-tip");
+    tipEl.textContent = tip || "";
+    tipEl.hidden = !tip;
+    $("modal-primary").textContent = primary;
+    const lu = $("modal-levelup");
+    lu.hidden = !levelUp;
+    if (levelUp) { lu.textContent = `Passa al livello ${levelUp} 🚀`; lu.dataset.level = levelUp; }
+    state.modalAction = action;
+    $("sr-announce").textContent = `${title} ${msg}`;
+
+    lastFocus = document.activeElement;
+    const m = $("modal");
+    m.classList.add("open");
+    m.setAttribute("aria-hidden", "false");
+    setTimeout(() => $("modal-primary").focus(), 30);
+  }
+  function closeModal(then) {
+    const m = $("modal");
+    if (!m.classList.contains("open")) return;
+    m.classList.remove("open");
+    m.setAttribute("aria-hidden", "true");
+    setTimeout(then, reducedMotion ? 0 : 250);
+  }
+  function onPrimary() {
+    const action = state.modalAction;
+    closeModal(() => {
+      if (action === "retry") {
+        state.locked = false;
+        setButtonsEnabled(true);
+        setMood("idle");
+        $("left-speech").textContent = "Conta bene! 🔍";
+        $("right-speech").textContent = "Ce la fai! 💪";
+        if (lastFocus && lastFocus.focus) lastFocus.focus();
+      } else {
+        newRound();
+      }
+    });
+  }
+
+  // ---------- Livelli, audio, reset ----------
+  function changeLevel(lvl) {
+    state.level = lvl;
+    store.set("level", lvl);
+    document.querySelectorAll(".levels button").forEach(b => {
+      b.setAttribute("aria-pressed", String(Number(b.dataset.level) === lvl));
+    });
+    newRound();
+  }
+  function renderSoundBtn() {
+    const b = $("sound-btn");
+    b.textContent = state.sound ? "🔊 Audio sì" : "🔇 Audio no";
+    b.setAttribute("aria-pressed", String(state.sound));
+  }
+
+  // ---------- Eventi ----------
+  document.querySelectorAll(".btn-choice").forEach(b => b.addEventListener("click", () => checkAnswer(b.dataset.sym)));
+  document.querySelectorAll(".levels button").forEach(b => b.addEventListener("click", () => changeLevel(Number(b.dataset.level))));
+  $("sound-btn").addEventListener("click", () => { state.sound = !state.sound; store.set("sound", state.sound); renderSoundBtn(); });
+  $("reset-btn").addEventListener("click", () => { state.score = 0; state.streak = 0; updateStats(); newRound(); });
+  $("modal-primary").addEventListener("click", onPrimary);
+  $("modal-levelup").addEventListener("click", (e) => {
+    const lvl = Number(e.currentTarget.dataset.level);
+    closeModal(() => changeLevel(lvl));
+  });
+
+  document.addEventListener("keydown", (e) => {
+    const modalOpen = $("modal").classList.contains("open");
+    if (modalOpen) {
+      if (e.key === "Escape") { e.preventDefault(); onPrimary(); }
+      if (e.key === "Tab") {
+        // tiene il focus dentro la finestra
+        const focusables = [...$("modal").querySelectorAll("button:not([hidden])")];
+        const i = focusables.indexOf(document.activeElement);
+        e.preventDefault();
+        const next = e.shiftKey ? (i <= 0 ? focusables.length - 1 : i - 1) : (i + 1) % focusables.length;
+        focusables[next].focus();
+      }
+      return;
+    }
+    if (e.key === "<" || e.key === ">" || e.key === "=") { e.preventDefault(); checkAnswer(e.key); }
+  });
+
+  // ---------- Avvio ----------
+  state.best = Number(store.get("best", 0)) || 0;
+  state.sound = store.get("sound", true) !== false;
+  const savedLevel = Number(store.get("level", 1));
+  renderSoundBtn();
+  updateStats();
+  drawTilt(0);
+  changeLevel([1, 2, 3].includes(savedLevel) ? savedLevel : 1);
+})();
+</script>
+</body>
+</html>
